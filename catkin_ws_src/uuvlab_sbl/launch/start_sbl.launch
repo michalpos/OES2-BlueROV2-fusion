@@ -1,0 +1,7 @@
+<launch>
+    <!-- Node for the first UGPS system -->
+    <node name="waterlinked_94" pkg="uuvlab_sbl" type="uuvlab_sbl_node.py" output="screen" args="http://192.168.3.94"/>
+
+    <!-- Node for the second UGPS system -->
+    <node name="waterlinked_95" pkg="uuvlab_sbl" type="uuvlab_sbl_node.py" output="screen" args="http://192.168.3.95"/>
+</launch>
