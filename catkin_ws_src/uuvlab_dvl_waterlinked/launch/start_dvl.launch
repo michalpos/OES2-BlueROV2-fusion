@@ -1,0 +1,9 @@
+<launch>
+    <!-- Node for Waterlinked DVL data publishing -->
+    <node name="waterlinked_dvl_publisher" pkg="uuvlab_dvl_waterlinked" type="dvl_tcp.py" output="screen">
+        <!-- Parameters for DVL connection -->
+        <param name="ip" value="192.168.3.100"/>
+        <param name="port" value="16171"/>
+        <param name="do_log_raw_data" value="true"/>
+    </node>
+</launch>
