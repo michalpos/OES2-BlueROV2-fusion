@@ -1,0 +1,38 @@
+<launch>
+
+	<arg name="Record" default="true" />  <!-- Set to true to record data -->
+
+	<!-- Sensor nodes begin -->
+	<group ns="bluerov2">
+		<!-- Thruster manager -->
+		<?ignore
+		<include file="$(find uuvlab_thruster)/launch/start_thruster_manager.launch" > 
+			<arg name="model_name" value="bluerov2_heavy" />
+			<!-- Choose bluerov2 or bluerov2_heavy-->
+		</include>
+		?
+
+		<!-- Arduino rosserial node - re-spawnable -->
+		<node name="rosserial" pkg="rosserial_python" type="serial_node.py">
+			<param name="port" value="/dev/ttyACM0" />
+			<param name="baud" value="115200" />
+		</node>
+
+		<node name="imu_tm200" pkg="uuvlab_tm200" type="uuvlab_tm200_node" output="screen" respawn="true">
+			<param name="device_port" value="/dev/ttyS0"/>
+		</node>
+
+		<node name="pressure_ms5837" pkg="uuvlab_ms5837" type="uuvlab_ms5837.py" respawn="true" />
+
+		<!-- Estimators -->
+		<!-- Pose -->
+		<!-- <node pkg="bluerov2_pose_estimator" type="bluerov2_pose_estimator.py" name="pose_estimator" /> -->
+
+	</group>
+	<!-- Sensor nodes end -->
+
+	<group if="$(arg Record)">
+		<arg name="excludeTopics" value="/rosout|/rosout_agg|/diagnostics" />
+		<node pkg="rosbag" type="record" name="rosbag_record" output="screen" args="record --split --size=2048 -o $(find uuvlab_thruster)/../../../ExtDisk/data/BlueROV2 -a -x $(arg excludeTopics)"/> 
+	</group>
+</launch>

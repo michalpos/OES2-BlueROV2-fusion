@@ -1,0 +1,73 @@
+<launch>
+
+	<arg name="Record" default="false" />  <!-- Set to true to record data -->
+	<arg name="pca9685" default="false" /> <!-- Set to true to use pca9685 board -->
+	<arg name="tsys01" default="false" />  <!-- Set to true to use temperature sensor -->
+	<arg name="DVL" default="false" />     <!-- Set to true to use doppler velocity log -->
+	<arg name="SBL" default="false" />     <!-- Set to true to use short baseline system -->
+
+	<?ignore
+	<!-- Robot description file -->
+	<include file="$(find bluerov2_description)/launch/upload.launch" >
+	?>
+
+	<!-- Sensor nodes begin -->
+	<group ns="bluerov2">
+		<!-- Thruster manager -->
+		<include file="$(find uuvlab_thruster)/launch/start_thruster_manager.launch" > 
+			<arg name="model_name" value="bluerov2_heavy" />
+			<!-- Choose bluerov2 or bluerov2_heavy-->
+		</include>
+
+		<!-- Arduino rosserial node - re-spawnable -->
+		<group if="$(eval arg('pca9685') == false)">
+			<node name="rosserial" pkg="rosserial_python" type="serial_node.py">
+				<param name="port" value="/dev/ttyAMC0" />
+				<param name="baud" value="115200" />
+			</node>
+		</group>
+
+		<!-- Thuruster node - using PCA9685 board -->
+		<group if="$(arg pca9685)">
+		<include file="$(find uuvlab_pca9685)/launch/uuvlab_pca9685.launch">
+			<arg name="pca9685_pwm_ports" value="0,1,2,3,4,5,6,7,15" />
+		</include>
+		</group>
+
+		<node name="imu_tm200" pkg="uuvlab_tm200" type="uuvlab_tm200_node" output="screen" respawn="true">
+			<param name="device_port" value="/dev/ttyUSB0"/>
+		</node>
+
+		<node name="pressure_ms5837" pkg="uuvlab_ms5837" type="uuvlab_ms5837.py" respawn="true" />
+
+		<group if="$(arg tsys01)">
+			<node name="temperature_tsys01" pkg="uuvlab_tsys01" type="uuvlab_tsys01.py" respawn="true" />
+		</group>
+
+		<group if="$(arg DVL)">
+			<!-- waterlinked dvl node -->
+			<node pkg="uuvlab_dvl_waterlinked" type="dvl_tcp.py" name="dvl_tcp">
+				<param name="ip" value="192.168.2.100"/>
+				<param name="port" value="16171"/>
+			</node>
+		</group>
+
+		<group if="$(arg SBL)">
+			<!-- waterlinked sbl node -->
+			<node pkg="uuvlab_sbl" type="uuvlab_sbl_node.py" name="sbl">
+				<remap from="pose" to="estimator/pose" />
+			</node>
+		</group>
+
+		<!-- Estimators -->
+		<!-- Pose -->
+		<!-- <node pkg="bluerov2_pose_estimator" type="bluerov2_pose_estimator.py" name="pose_estimator" /> -->
+
+	</group>
+<!-- Sensor nodes end -->
+
+	<group if="$(arg Record)">
+		<arg name="excludeTopics" value="/rosout|/rosout_agg|/diagnostics" />
+		<node pkg="rosbag" type="record" name="rosbag_record" output="screen" args="record --split --size=2048 -o $(find uuvlab_thruster)/../../../ExtDisk/data/BlueROV2 -a -x $(arg excludeTopics)"/> 
+	</group>
+</launch>
